@@ -5,8 +5,9 @@
 import pandas as pd #used to import, hold, and manipulate data
 import matplotlib.pyplot as plt #Used to make plots
 from datetime import datetime #Helps with dates
-import sys #Works with getop to read flags
+import sys
 import getopt #Lets us send flags to the app
+import os.path
 #import numpy as np
 #import os
 
@@ -158,8 +159,8 @@ def menu():
             plotPBRlog()
             return
         elif opt == '-f':
-            userFile = input("\nPlease provide a raw PBR Log filename located in CSV folder\n")
-            plotPBRlog("CSV/" + userFile)
+            userFile = input("\nPlease provide a PBR Log File Location. (Drag and drop)\n")
+            plotPBRlog("/CSV/" + os.path.basename(userFile))
             return
         else:
             continue
