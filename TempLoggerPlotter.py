@@ -1,22 +1,24 @@
+# Created: 2021/03/18
+# Stuart de Haas
+# Last Modified: 2021/03/18
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
-import numpy as np
+#import numpy as np
 #import os
 
-filename = "CSV/PBR99_Temp_Test_1.csv"
-LogFilename = "CSV/PBR99_Logfile.csv"
+tempLoggerfile = "CSV/PBR99_Temp_Test_1.csv"
+#PBRlogFilename = "CSV/PBR99_Logfile.csv"
+PBRlogFilename = "CSV/Log2.csv"
 
-start_date = "2021-03-10"
+start_date = "2021-03-15"
 end_date   = "2021-03-20"
 
 Logger_Moving_Ave = 500
 
-def plotStuff():
-    plt.close('all')
-    df = pd.read_csv(filename)
-    df['DateTime'] = df['DateTime'].astype('datetime64[ns]')
-    #df['DateTime'] = df['DateTime'].DateOffset(hours=1)
+def plotTempLogger():
+    df = pd.read_csv(tempLoggerfile, parse_dates=["DateTime"])
     df['Ch1_Value'] = df.rolling(window=Logger_Moving_Ave)['Ch1_Value'].mean()
     df['Ch2_Value'] = df.rolling(window=Logger_Moving_Ave)['Ch2_Value'].mean()
     df['Ch3_Value'] = df.rolling(window=Logger_Moving_Ave)['Ch3_Value'].mean()
@@ -25,23 +27,117 @@ def plotStuff():
     between_two_dates = after_start_date & before_end_date
     filtered_dates = df.loc[between_two_dates]
 
-    ax = plt.gca()
     #filtered_dates.plot(kind='line', x='DateTime', y='Ch1_Value', ax=ax, title='PBR99 High Delta Test', label='Floor Temp')
     filtered_dates.plot(kind='line', x='DateTime', y='Ch2_Value', ax=ax, label='Front of PBR', title='PBR99 High Delta Test')
     filtered_dates.plot(kind='line', x='DateTime', y='Ch3_Value', ax=ax, label='Rear of PBR')
 
-    df2 = pd.read_csv(LogFilename)
-    df2['Date'] = df2['Date'].astype('datetime64[ns]')
+def plotCleanLog():
+    df = pd.read_csv(PBRlogFilename, parse_dates=["Date"])
 
-    after_start_date = df2["Date"] >= start_date
-    before_end_date = df2["Date"] <= end_date
+    after_start_date = df["Date"] >= start_date
+    before_end_date = df["Date"] <= end_date
     between_two_dates = after_start_date & before_end_date
-    filtered_dates = df2.loc[between_two_dates]
+    filtered_dates = df.loc[between_two_dates]
 
     filtered_dates.plot(kind='line', x='Date', y='Temperature_C', ax=ax, label='PBR Algae Temp')
 
-    plt.grid(True)
 
+def plotPBRlog():
+
+    df = pd.read_csv(PBRlogFilename, skiprows=2, comment='E', parse_dates=["Date"])
+
+    after_start_date = df["Date"] >= start_date
+    before_end_date = df["Date"] <= end_date
+    between_two_dates = after_start_date & before_end_date
+    df = df.loc[between_two_dates]
+
+    # makes lots of little plots
+    #df.plot(subplots=True, figsize=(8, 8))
+
+    fig, temperature = plt.subplots(figsize=(16,8)) # (width, height) in inches
+
+    pH = temperature.twinx()
+    CO2 = temperature.twinx()
+    rho = temperature.twinx()
+    light = temperature.twinx()
+    volume = temperature.twinx()
+    nutrients = temperature.twinx()
+
+    temperature.set_ylim(10,30)
+    pH.set_ylim(5,9)
+    CO2.set_ylim(0,15)
+    rho.set_ylim(0,12)
+    light.set_ylim(0,110)
+    volume.set_ylim(0,1300)
+    nutrients.set_ylim(0,100)
+
+    temperature.set_xlabel("Date")
+    temperature.set_ylabel("Temperature")
+    pH.set_ylabel("pH")
+    CO2.set_ylabel("CO2 Injections")
+    rho.set_ylabel("Relative Density")
+    light.set_ylabel("Light Intensity")
+    volume.set_ylabel("Tank Volume")
+    nutrients.set_ylabel("Total Nutrients")
+
+    p1, = temperature.plot(df['Date'], df['Temperature_C'], color='b', label="Temperaure")
+    p2, = pH.plot(df['Date'], df['pH'], color='r', label="pH")
+    p3, = CO2.plot(df['Date'], df['CO2_Injectionsper10min'], color='g', label="CO2 Injections/10min")
+    p4, = rho.plot(df['Date'], df['RelativeDensity'], color='c', label="Relative Density")
+    p5, = light.plot(df['Date'], df['LightIntensity'], color='m', label="light Intensity")
+    p6, = volume.plot(df['Date'], df['TankVolume'], color='y', label="Tank Volume")
+    p7, = nutrients.plot(df['Date'], df['TotalNutrients_mLper10min'], color='b', label="Total Nutrients")
+
+    lns = [p1, p2, p3, p4, p5, p6, p7]
+    temperature.legend(handles=lns, loc='best')
+    CO2.spines['right'].set_position(('outward', 60))
+    rho.spines['right'].set_position(('outward', 120))
+    light.spines['left'].set_position(('outward', 120))
+    volume.spines['left'].set_position(('outward', 60))
+    nutrients.spines['right'].set_position(('outward', 180))
+
+    make_patch_spines_invisible(light)
+    make_patch_spines_invisible(volume)
+    light.spines["left"].set_visible(True)
+    light.yaxis.set_label_position('left')
+    light.yaxis.set_ticks_position('left')
+
+    volume.spines["left"].set_visible(True)
+    volume.yaxis.set_label_position('left')
+    volume.yaxis.set_ticks_position('left')
+
+    fig.tight_layout()
+    plt.grid(True)
+    plt.show()
+    #plt.savefig("pyplot.pdf")
+    #filtered_dates.plot(kind='line', x='Date', y='Temperature_C', ax=ax, label='PBR Algae Temp')
+    #filtered_dates.plot(kind='line', ax=ax, label='PBR Algae Temp')
+
+# taken from here: https://matplotlib.org/2.0.2/examples/pylab_examples/multiple_yaxis_with_spines.html
+def make_patch_spines_invisible(ax):
+    ax.set_frame_on(True)
+    ax.patch.set_visible(False)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+
+def main():
+
+    plt.close('all')
+    global ax
+    ax = plt.gca()
+
+    plotPBRlog()
+    #plotCleanLog()
+    #plotTempLogger()
+
+    plt.grid(True)
     plt.show()
 
-plotStuff()
+try:
+    #main()
+    plotPBRlog()
+except(KeyboardInterrupt, SystemExit):
+    print()
+    print("Keyboard Interrupt. Exiting")
+except:
+    raise
