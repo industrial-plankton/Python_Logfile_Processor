@@ -82,13 +82,13 @@ def plotPBRlog(filename = PBRlogFilename):
     volume.set_ylabel("Tank Volume")
     nutrients.set_ylabel("Total Nutrients")
 
-    p1, = temperature.plot(df['Date'], df['Temperature_C'], color='b', label="Temperaure")
-    p2, = pH.plot(df['Date'], df['pH'], color='r', label="pH")
-    p3, = CO2.plot(df['Date'], df['CO2_Injectionsper10min'], color='g', label="CO2 Injections/10min")
-    p4, = rho.plot(df['Date'], df['RelativeDensity'], color='c', label="Relative Density")
-    p5, = light.plot(df['Date'], df['LightIntensity'], color='m', label="light Intensity")
-    p6, = volume.plot(df['Date'], df['TankVolume'], color='y', label="Tank Volume")
-    p7, = nutrients.plot(df['Date'], df['TotalNutrients_mLper10min'], color='b', label="Total Nutrients")
+    p1, = temperature.plot(df['Date'], df['Temperature_C'], color='r', label="Temperaure")
+    p2, = pH.plot(df['Date'], df['pH'], color='b', label="pH")
+    p3, = CO2.plot(df['Date'], df['CO2_Injectionsper10min'], color='y', label="CO2 Injections/10min")
+    p4, = rho.plot(df['Date'], df['RelativeDensity'], color='g', label="Relative Density")
+    p5, = light.plot(df['Date'], df['LightIntensity'], color='y', label="light Intensity")
+    p6, = volume.plot(df['Date'], df['TankVolume'], color='b', label="Tank Volume")
+    p7, = nutrients.plot(df['Date'], df['TotalNutrients_mLper10min'], color='m', label="Total Nutrients")
 
     lns = [p1, p2, p3, p4, p5, p6, p7]
     temperature.legend(handles=lns, loc='best')
@@ -107,6 +107,10 @@ def plotPBRlog(filename = PBRlogFilename):
     volume.spines["left"].set_visible(True)
     volume.yaxis.set_label_position('left')
     volume.yaxis.set_ticks_position('left')
+
+    temperature.yaxis.label.set_color(p1.get_color())
+    #temperature.spines['right'].set_edgecolor(p1.get_color())
+    temperature.tick_params(axis='y', colors=p1.get_color())
 
     fig.tight_layout()
     plt.grid(True)
