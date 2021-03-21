@@ -3,7 +3,11 @@
 # Last Modified: 2021/03/18
 
 import pandas as pd #used to import, hold, and manipulate data
-import matplotlib.pyplot as plt #Used to make plots
+import matplotlib.pyplot as plt
+import mpld3
+from mpld3 import plugins
+from mpld3.utils import get_id
+import collections
 from datetime import datetime #Helps with dates
 import sys #Works with getop to read flags
 import getopt #Lets us send flags to the app
@@ -19,6 +23,8 @@ end_date   = "2021-03-20"
 
 Logger_Moving_Ave = 500
 
+line_collections = []
+
 def plotTempLogger():
     df = pd.read_csv(tempLoggerfile, parse_dates=["DateTime"])
     df['Ch1_Value'] = df.rolling(window=Logger_Moving_Ave)['Ch1_Value'].mean()
@@ -30,8 +36,8 @@ def plotTempLogger():
     filtered_dates = df.loc[between_two_dates]
 
     #filtered_dates.plot(kind='line', x='DateTime', y='Ch1_Value', ax=ax, title='PBR99 High Delta Test', label='Floor Temp')
-    filtered_dates.plot(kind='line', x='DateTime', y='Ch2_Value', ax=ax, label='Front of PBR', title='PBR99 High Delta Test')
-    filtered_dates.plot(kind='line', x='DateTime', y='Ch3_Value', ax=ax, label='Rear of PBR')
+    line_collections.append(filtered_dates.plot(kind='line', x='DateTime', y='Ch2_Value', ax=ax, label='Front of PBR', alpha=0.2, title='PBR99 High Delta Test'))
+    line_collections.append(filtered_dates.plot(kind='line', x='DateTime', y='Ch3_Value', ax=ax, label='Rear of PBR', alpha=0.2))
 
 def plotCleanLog():
     df = pd.read_csv(cleanPBRlogFilename, parse_dates=["Date"])
@@ -41,7 +47,7 @@ def plotCleanLog():
     between_two_dates = after_start_date & before_end_date
     filtered_dates = df.loc[between_two_dates]
 
-    filtered_dates.plot(kind='line', x='Date', y='Temperature_C', ax=ax, label='PBR Algae Temp')
+    line_collections.append(filtered_dates.plot(kind='line', x='Date', y='Temperature_C', ax=ax, label='PBR Algae Temp'))
 
 
 def plotPBRlog(filename = PBRlogFilename):
@@ -110,7 +116,9 @@ def plotPBRlog(filename = PBRlogFilename):
 
     fig.tight_layout()
     plt.grid(True)
-    plt.show()
+    #mpld3.save_html(plt, "test.html")
+    mpld3.show()
+    #plt.show()
     #plt.savefig("pyplot.pdf")
     #filtered_dates.plot(kind='line', x='Date', y='Temperature_C', ax=ax, label='PBR Algae Temp')
     #filtered_dates.plot(kind='line', ax=ax, label='PBR Algae Temp')
@@ -152,7 +160,19 @@ def menu():
             plotTempLogger()
 
             plt.grid(True)
-            plt.show()
+
+            #labels = ["a", "b", "c"]
+            handles, labels = ax.get_legend_handles_labels()
+            interactive_legend = plugins.InteractiveLegendPlugin(zip(handles,
+                ax.collections),
+                labels,
+                alpha_unsel = 0.5,
+                alpha_over = 1.5,
+                start_visible=True)
+
+            plugins.connect(plt.gcf(), interactive_legend)
+            mpld3.show()
+            #plt.show()
             return
         elif opt == '-l':
             plotPBRlog()
