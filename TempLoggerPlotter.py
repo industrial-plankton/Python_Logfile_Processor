@@ -3,6 +3,7 @@
 # Last Modified: 2021/03/18
 
 import pandas as pd #used to import, hold, and manipulate data
+import matplotlib as mpl
 import matplotlib.pyplot as plt #Used to make plots
 from datetime import datetime #Helps with dates
 import sys #Works with getop to read flags
@@ -11,13 +12,32 @@ import getopt #Lets us send flags to the app
 #import os
 
 tempLoggerfile = "CSV/PBR99_Temp_Test_1.csv"
-cleanPBRlogFilename = "CSV/PBR99_Logfile.csv"
-PBRlogFilename = "CSV/Log2.csv"
+sensorBoxFile = "CSV/SensorBoxLog005.csv"
+cleanPBRlogFilename = "CSV/PBR46_20210708.csv"
+PBRlogFilename = "CSV/PBR46_20210708.csv"
+eventLogFile = "CSV/eventLog001.csv"
 
-start_date = "2021-03-15"
-end_date   = "2021-03-20"
+start_date = "2021-06-15"
+end_date   = "2021-07-24"
 
-Logger_Moving_Ave = 500
+Logger_Moving_Ave = 100
+#PBR_Moving_Ave = 500
+
+def plotSensorBoxLogger():
+    df = pd.read_csv(sensorBoxFile, parse_dates=["Date-Time"])
+    df['Probe1'] = df.rolling(window=Logger_Moving_Ave)['Probe1'].mean()
+    df['Probe2'] = df.rolling(window=Logger_Moving_Ave)['Probe2'].mean()
+    df['Probe3'] = df.rolling(window=Logger_Moving_Ave)['Probe3'].mean()
+    df['Probe4'] = df.rolling(window=Logger_Moving_Ave)['Probe4'].mean()
+    after_start_date = df["Date-Time"] >= start_date
+    before_end_date = df["Date-Time"] <= end_date
+    between_two_dates = after_start_date & before_end_date
+    filtered_dates = df.loc[between_two_dates]
+
+    filtered_dates.plot(kind='line', x='Date-Time', y='Probe1', ax=ax, title='PBR1250L Temperature Test, from ' + start_date + ' to ' + end_date, label='Probe1 Temperature')
+    filtered_dates.plot(kind='line', x='Date-Time', y='Probe2', ax=ax, label='Probe2')
+    filtered_dates.plot(kind='line', x='Date-Time', y='Probe3', ax=ax, label='Probe3')
+    filtered_dates.plot(kind='line', x='Date-Time', y='Probe4', ax=ax, label='Probe4')
 
 def plotTempLogger():
     df = pd.read_csv(tempLoggerfile, parse_dates=["DateTime"])
@@ -34,7 +54,7 @@ def plotTempLogger():
     filtered_dates.plot(kind='line', x='DateTime', y='Ch3_Value', ax=ax, label='Rear of PBR')
 
 def plotCleanLog():
-    df = pd.read_csv(cleanPBRlogFilename, parse_dates=["Date"])
+    df = pd.read_csv(cleanPBRlogFilename, skiprows=2, comment='E', parse_dates=["Date"])
 
     after_start_date = df["Date"] >= start_date
     before_end_date = df["Date"] <= end_date
@@ -119,6 +139,15 @@ def plotPBRlog(filename = PBRlogFilename):
     #filtered_dates.plot(kind='line', x='Date', y='Temperature_C', ax=ax, label='PBR Algae Temp')
     #filtered_dates.plot(kind='line', ax=ax, label='PBR Algae Temp')
 
+def plotEvents():
+    df = pd.read_csv(eventLogFile, parse_dates=["Date-Time"])
+    after_start_date = df["Date-Time"] >= start_date
+    before_end_date = df["Date-Time"] <= end_date
+    between_two_dates = after_start_date & before_end_date
+    filtered_dates = df.loc[between_two_dates]
+    plt.vlines(df.iloc[:,0], 0, 5)
+
+
 # taken from here: https://matplotlib.org/2.0.2/examples/pylab_examples/multiple_yaxis_with_spines.html
 def make_patch_spines_invisible(ax):
     ax.set_frame_on(True)
@@ -140,7 +169,7 @@ def menu():
         sys.exit(2)
 
     if len(opts) == 0:
-        print("Please use a flag to indicate desired output")
+        print("Please use a flag to indicate desired output. Try t l f or h")
         return
 
     for opt, arg in opts:
@@ -149,13 +178,32 @@ def menu():
             return
         elif opt == '-t':
             plt.close('all')
+            COLOR = 'white'
+            mpl.rcParams['text.color'] = COLOR
+            mpl.rcParams['axes.labelcolor'] = COLOR
+            mpl.rcParams['xtick.color'] = COLOR
+            mpl.rcParams['ytick.color'] = COLOR
+
+            fig = plt.figure()
+            fig.patch.set_facecolor('#353535')
+            #fig.patch.set_alpha(0.7)
+
             global ax
-            ax = plt.gca()
+            #ax = plt.gca()
+            ax = fig.add_subplot(111)
 
             plotCleanLog()
-            plotTempLogger()
+            plotSensorBoxLogger()
+            #plotEvents()
 
             plt.grid(True)
+            #plt.figure(facecolor='grey')
+            ax.set_facecolor('#353535')
+            ax.spines['bottom'].set_color('white')
+            ax.spines['top'].set_color('white')
+            ax.spines['right'].set_color('white')
+            ax.spines['left'].set_color('white')
+            #plt.set_facecolor('grey')
             plt.show()
             return
         elif opt == '-l':
