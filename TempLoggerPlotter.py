@@ -13,10 +13,10 @@ import getopt #Lets us send flags to the app
 
 sensorBoxFile = "CSV/SensorBoxLog001_20210820.csv"
 PBRlogFilename = "CSV/RawLog1.csv"
-RAWPBRlogFilename = "CSV/RawLog1.csv"
+RAWPBRlogFilename = "CSV/62RawLog1.csv"
 
-start_date = "2021-09-26"
-end_date   = "2021-09-29"
+start_date = "2021-09-27" # Inclusive
+end_date   = "2021-09-28" # Exclusive
 
 Logger_Moving_Ave = 10
 
@@ -26,6 +26,7 @@ Logger_Moving_Ave = 10
 #eventLogFile = "CSV/eventLog001.csv"
 
 def normalize(df):
+    """ Takes a dataframe and normalizes all non-date columns (based on column title) """
     result = df.copy()
     for feature_name in df.columns:
         if(feature_name == ('Date' or 'Date-Time')):
@@ -36,31 +37,39 @@ def normalize(df):
         result[feature_name] = (df[feature_name] - df[feature_name].mean()) / df[feature_name].std()
     return result
 
-def plotRAWPBR():
-    df = pd.read_csv(RAWPBRlogFilename, skiprows=1, parse_dates=["Date"])
-    df['RawpH'] = df.rolling(window=Logger_Moving_Ave)['RawpH'].mean()
-    df['RawTemp'] = df.rolling(window=Logger_Moving_Ave)['RawTemp'].mean()
-    df['RawPressure'] = df.rolling(window=Logger_Moving_Ave)['RawPressure'].mean()
-    df['RawOD'] = df.rolling(window=Logger_Moving_Ave)['RawOD'].mean()
-    df['pH'] = df.rolling(window=Logger_Moving_Ave)['pH'].mean()
-    df['Temp'] = df.rolling(window=Logger_Moving_Ave)['Temp'].mean()
-    df['Vol'] = df.rolling(window=Logger_Moving_Ave)['Vol'].mean()
-    df['OD'] = df.rolling(window=Logger_Moving_Ave)['OD'].mean()
+def movingAve(df):
+    """ Takes a dataframe and applies a moving average"""
+    result = df.copy()
+    for feature_name in df.columns:
+        if(feature_name == ('Date' or 'Date-Time')):
+            continue
+        result[feature_name] = df.rolling(window=Logger_Moving_Ave)[feature_name].mean()
+
+    return result
+
+def filterDates(df):
     after_start_date = df["Date"] >= start_date
     before_end_date = df["Date"] <= end_date
     between_two_dates = after_start_date & before_end_date
-    filtered_dates = df.loc[between_two_dates]
+    return df.loc[between_two_dates]
 
-    filtered_dates = normalize(filtered_dates)
 
-    filtered_dates.plot(kind='line', x='Date', y='RawpH', ax=ax, color='cyan', title='PBR1250L Ferrari, from ' + start_date + ' to ' + end_date, label='RawpH')
-    filtered_dates.plot(kind='line', x='Date', y='RawTemp', ax=ax, color='r', label='RawTemp')
-    filtered_dates.plot(kind='line', x='Date', y='RawPressure', ax=ax, color='cornflowerblue', label='RawPressure')
-    filtered_dates.plot(kind='line', x='Date', y='RawOD', ax=ax, color='g', label='RawOD')
-    #filtered_dates.plot(kind='line', x='Date', y='pH', ax=ax, label='pH')
-    #filtered_dates.plot(kind='line', x='Date', y='Temp', ax=ax, label='Temp')
-    #filtered_dates.plot(kind='line', x='Date', y='Vol', ax=ax, label='Vol')
-    #filtered_dates.plot(kind='line', x='Date', y='OD', ax=ax, label='OD')
+def plotRAWPBR():
+    """ Plots a high-res RAW log file from a PBR """
+    df = pd.read_csv(RAWPBRlogFilename, skiprows=1, parse_dates=["Date"])
+
+    # df = filterDates(df)
+    df = normalize(df)
+    # df = movingAve(df)
+
+    df.plot(kind='line', x='Date', y='RawPressure', ax=ax, color='cornflowerblue', label='RawPressure')
+    df.plot(kind='line', x='Date', y='RawpH', ax=ax, color='cyan', title='PBR1250L Ferrari, from ' + start_date + ' to ' + end_date, label='RawpH')
+    df.plot(kind='line', x='Date', y='RawTemp', ax=ax, color='r', label='RawTemp')
+    df.plot(kind='line', x='Date', y='RawOD', ax=ax, color='g', label='RawOD')
+   # df.plot(kind='line', x='Date', y='pH', ax=ax, label='pH')
+   # df.plot(kind='line', x='Date', y='Temp', ax=ax, label='Temp')
+   # df.plot(kind='line', x='Date', y='Vol', ax=ax, label='Vol')
+   # df.plot(kind='line', x='Date', y='OD', ax=ax, label='OD')
 
 def plotSensorBoxLogger():
     df = pd.read_csv(sensorBoxFile, parse_dates=["Date-Time"])
