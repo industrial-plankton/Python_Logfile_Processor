@@ -11,56 +11,18 @@ import getopt #Lets us send flags to the app
 #import numpy as np
 #import os
 
-sensorBoxFile = "CSV/SensorBoxLog001_20210820.csv"
-PBRlogFilename = "CSV/RawLog1.csv"
-RAWPBRlogFilename = "CSV/RawLog1.csv"
+sensorBoxFile = "CSV/SensorBoxLog005.csv"
+PBRlogFilename = "CSV/Log2.csv"
 
-start_date = "2021-09-26"
-end_date   = "2021-09-29"
+start_date = "2021-07-08"
+end_date   = "2021-07-13"
 
-Logger_Moving_Ave = 10
+Logger_Moving_Ave = 100
 
 #tempLoggerfile = "CSV/PBR99_Temp_Test_1.csv"
 #PBR_Moving_Ave = 500
 #cleanPBRlogFilename = "CSV/PBR46_20210708.csv"
 #eventLogFile = "CSV/eventLog001.csv"
-
-def normalize(df):
-    result = df.copy()
-    for feature_name in df.columns:
-        if(feature_name == ('Date' or 'Date-Time')):
-            continue
-        max_value = df[feature_name].max()
-        min_value = df[feature_name].min()
-        #result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
-        result[feature_name] = (df[feature_name] - df[feature_name].mean()) / df[feature_name].std()
-    return result
-
-def plotRAWPBR():
-    df = pd.read_csv(RAWPBRlogFilename, skiprows=1, parse_dates=["Date"])
-    df['RawpH'] = df.rolling(window=Logger_Moving_Ave)['RawpH'].mean()
-    df['RawTemp'] = df.rolling(window=Logger_Moving_Ave)['RawTemp'].mean()
-    df['RawPressure'] = df.rolling(window=Logger_Moving_Ave)['RawPressure'].mean()
-    df['RawOD'] = df.rolling(window=Logger_Moving_Ave)['RawOD'].mean()
-    df['pH'] = df.rolling(window=Logger_Moving_Ave)['pH'].mean()
-    df['Temp'] = df.rolling(window=Logger_Moving_Ave)['Temp'].mean()
-    df['Vol'] = df.rolling(window=Logger_Moving_Ave)['Vol'].mean()
-    df['OD'] = df.rolling(window=Logger_Moving_Ave)['OD'].mean()
-    after_start_date = df["Date"] >= start_date
-    before_end_date = df["Date"] <= end_date
-    between_two_dates = after_start_date & before_end_date
-    filtered_dates = df.loc[between_two_dates]
-
-    filtered_dates = normalize(filtered_dates)
-
-    filtered_dates.plot(kind='line', x='Date', y='RawpH', ax=ax, color='cyan', title='PBR1250L Ferrari, from ' + start_date + ' to ' + end_date, label='RawpH')
-    filtered_dates.plot(kind='line', x='Date', y='RawTemp', ax=ax, color='r', label='RawTemp')
-    filtered_dates.plot(kind='line', x='Date', y='RawPressure', ax=ax, color='cornflowerblue', label='RawPressure')
-    filtered_dates.plot(kind='line', x='Date', y='RawOD', ax=ax, color='g', label='RawOD')
-    #filtered_dates.plot(kind='line', x='Date', y='pH', ax=ax, label='pH')
-    #filtered_dates.plot(kind='line', x='Date', y='Temp', ax=ax, label='Temp')
-    #filtered_dates.plot(kind='line', x='Date', y='Vol', ax=ax, label='Vol')
-    #filtered_dates.plot(kind='line', x='Date', y='OD', ax=ax, label='OD')
 
 def plotSensorBoxLogger():
     df = pd.read_csv(sensorBoxFile, parse_dates=["Date-Time"])
@@ -68,10 +30,6 @@ def plotSensorBoxLogger():
     df['Probe2'] = df.rolling(window=Logger_Moving_Ave)['Probe2'].mean()
     df['Probe3'] = df.rolling(window=Logger_Moving_Ave)['Probe3'].mean()
     df['Probe4'] = df.rolling(window=Logger_Moving_Ave)['Probe4'].mean()
-    df['ThermoCouple1'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple1'].mean()
-    df['ThermoCouple2'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple2'].mean()
-    df['ThermoCouple3'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple3'].mean()
-    df['ThermoCouple4'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple4'].mean()
     after_start_date = df["Date-Time"] >= start_date
     before_end_date = df["Date-Time"] <= end_date
     between_two_dates = after_start_date & before_end_date
@@ -81,10 +39,6 @@ def plotSensorBoxLogger():
     filtered_dates.plot(kind='line', x='Date-Time', y='Probe2', ax=ax, label='Probe2')
     filtered_dates.plot(kind='line', x='Date-Time', y='Probe3', ax=ax, label='Probe3')
     filtered_dates.plot(kind='line', x='Date-Time', y='Probe4', ax=ax, label='Probe4')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple1', ax=ax, label='ThermoCouple1')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple2', ax=ax, label='ThermoCouple2')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple3', ax=ax, label='ThermoCouple3')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple4', ax=ax, label='ThermoCouple4')
 
 def plotTempLogger():
     df = pd.read_csv(tempLoggerfile, parse_dates=["DateTime"])
@@ -112,6 +66,7 @@ def plotCleanLog():
     #ax2 = ax.twinx()
     #ax2.set_ylim([0,150])
     #filtered_dates.plot(kind='line', x='Date', y='LightIntensity', ax=ax2, label='Light Intensity')
+
 
 def plotPBRlog(filename = PBRlogFilename):
 
@@ -211,7 +166,7 @@ def main():
 def menu():
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "tlfhr")
+        opts, args = getopt.getopt(sys.argv[1:], "tlfh")
     except getopt.GetoptError as e:
         print( str(e))
         print("Not a valid instruction")
@@ -225,7 +180,7 @@ def menu():
         if opt == '-h':
             print("You want help? Too bad.")
             return
-        elif opt == '-r':
+        elif opt == '-t':
             plt.close('all')
             COLOR = 'white'
             mpl.rcParams['text.color'] = COLOR
@@ -241,9 +196,8 @@ def menu():
             #ax = plt.gca()
             ax = fig.add_subplot(111)
 
-            #plotCleanLog()
-            #plotSensorBoxLogger()
-            plotRAWPBR()
+            plotCleanLog()
+            plotSensorBoxLogger()
             #plotEvents()
 
             plt.grid(True)
@@ -258,9 +212,6 @@ def menu():
             return
         elif opt == '-l':
             plotPBRlog()
-            return
-        elif opt == '-j':
-            plotRAWPBR()
             return
         elif opt == '-f':
             userFile = input("\nPlease provide a raw PBR Log filename located in CSV folder\n")
