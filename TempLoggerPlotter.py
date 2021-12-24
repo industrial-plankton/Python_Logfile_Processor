@@ -8,17 +8,18 @@ import matplotlib.pyplot as plt #Used to make plots
 from datetime import datetime #Helps with dates
 import sys #Works with getop to read flags
 import getopt #Lets us send flags to the app
-#import numpy as np
+import numpy as np
 #import os
 
-sensorBoxFile = "CSV/SensorBoxLog001_20210820.csv"
+sensorBoxFile = "CSV/PBR100L SN0009 non-Vented Computer PLC Heat Test 20211208.csv"
+tempLoggerfile = "CSV/PBR100L SN0009 Vented Computer heat test 20211222.csv"
 PBRlogFilename = "CSV/RawLog1.csv"
-RAWPBRlogFilename = "CSV/62RawLog1.csv"
+RAWPBRlogFilename = "CSV/RawLog3_PBR63_20210929_1251.csv"
 
 start_date = "2021-09-27" # Inclusive
-end_date   = "2021-09-28" # Exclusive
+end_date   = "2022-09-30" # Exclusive
 
-Logger_Moving_Ave = 10
+Logger_Moving_Ave = 100
 
 #tempLoggerfile = "CSV/PBR99_Temp_Test_1.csv"
 #PBR_Moving_Ave = 500
@@ -31,6 +32,8 @@ def normalize(df):
     for feature_name in df.columns:
         if(feature_name == ('Date' or 'Date-Time')):
             continue
+        #if(df.dtypes[feature_name] not np.float64):
+        #    continue
         max_value = df[feature_name].max()
         min_value = df[feature_name].min()
         #result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
@@ -41,7 +44,7 @@ def movingAve(df):
     """ Takes a dataframe and applies a moving average"""
     result = df.copy()
     for feature_name in df.columns:
-        if(feature_name == ('Date' or 'Date-Time')):
+        if(feature_name == ('DateTime' or 'Date-Time' or 'Date')):
             continue
         result[feature_name] = df.rolling(window=Logger_Moving_Ave)[feature_name].mean()
 
@@ -53,17 +56,20 @@ def filterDates(df):
     between_two_dates = after_start_date & before_end_date
     return df.loc[between_two_dates]
 
+def preprocessLogger(df):
+    df = df.replace(99999999, 0)
+    return df
 
 def plotRAWPBR():
     """ Plots a high-res RAW log file from a PBR """
     df = pd.read_csv(RAWPBRlogFilename, skiprows=1, parse_dates=["Date"])
 
     # df = filterDates(df)
-    df = normalize(df)
+    # df = normalize(df)
     # df = movingAve(df)
 
     df.plot(kind='line', x='Date', y='RawPressure', ax=ax, color='cornflowerblue', label='RawPressure')
-    df.plot(kind='line', x='Date', y='RawpH', ax=ax, color='cyan', title='PBR1250L Ferrari, from ' + start_date + ' to ' + end_date, label='RawpH')
+    df.plot(kind='line', x='Date', y='RawpH', ax=ax, color='cyan', label='RawpH', title='PBR1250L ' + RAWPBRlogFilename) #, from ' + start_date + ' to ' + end_date)
     df.plot(kind='line', x='Date', y='RawTemp', ax=ax, color='r', label='RawTemp')
     df.plot(kind='line', x='Date', y='RawOD', ax=ax, color='g', label='RawOD')
    # df.plot(kind='line', x='Date', y='pH', ax=ax, label='pH')
@@ -73,41 +79,38 @@ def plotRAWPBR():
 
 def plotSensorBoxLogger():
     df = pd.read_csv(sensorBoxFile, parse_dates=["Date-Time"])
-    df['Probe1'] = df.rolling(window=Logger_Moving_Ave)['Probe1'].mean()
-    df['Probe2'] = df.rolling(window=Logger_Moving_Ave)['Probe2'].mean()
-    df['Probe3'] = df.rolling(window=Logger_Moving_Ave)['Probe3'].mean()
-    df['Probe4'] = df.rolling(window=Logger_Moving_Ave)['Probe4'].mean()
-    df['ThermoCouple1'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple1'].mean()
-    df['ThermoCouple2'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple2'].mean()
-    df['ThermoCouple3'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple3'].mean()
-    df['ThermoCouple4'] = df.rolling(window=Logger_Moving_Ave)['ThermoCouple4'].mean()
-    after_start_date = df["Date-Time"] >= start_date
-    before_end_date = df["Date-Time"] <= end_date
-    between_two_dates = after_start_date & before_end_date
-    filtered_dates = df.loc[between_two_dates]
 
-    filtered_dates.plot(kind='line', x='Date-Time', y='Probe1', ax=ax, title='PBR1250L Temperature Test, from ' + start_date + ' to ' + end_date, label='Probe1 Temperature')
-    filtered_dates.plot(kind='line', x='Date-Time', y='Probe2', ax=ax, label='Probe2')
-    filtered_dates.plot(kind='line', x='Date-Time', y='Probe3', ax=ax, label='Probe3')
-    filtered_dates.plot(kind='line', x='Date-Time', y='Probe4', ax=ax, label='Probe4')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple1', ax=ax, label='ThermoCouple1')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple2', ax=ax, label='ThermoCouple2')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple3', ax=ax, label='ThermoCouple3')
-    filtered_dates.plot(kind='line', x='Date-Time', y='ThermoCouple4', ax=ax, label='ThermoCouple4')
+    #df.applymap({'TRUE' : 300, 'FALSE' : 0})
+    #df['Y6'] = df['Y6'].astype(int)*400
+
+    # df = filterDates(df)
+    # df = normalize(df)
+    # df = movingAve(df)
+
+    df.plot(kind='line', x='Date-Time', y='Probe1', ax=ax, label='Sleeve Threads', title='Ti Heater Sleeve temperature tests Sept, 2021 - ' + sensorBoxFile)
+    df.plot(kind='line', x='Date-Time', y='Probe2', ax=ax, label='Ambient')
+    #df.plot(kind='line', x='Date-Time', y='Probe3', ax=ax, label='Probe3')
+    #df.plot(kind='line', x='Date-Time', y='Probe4', ax=ax, label='Probe4')
+    df.plot(kind='line', x='Date-Time', y='ThermoCouple1', ax=ax, label='Sleeve Tip')
+    df.plot(kind='line', x='Date-Time', y='ThermoCouple2', ax=ax, label='Sleeve Base')
+    #df.plot(kind='line', x='Date-Time', y='ThermoCouple3', ax=ax, label='Thermo3')
+    df.plot(kind='line', x='Date-Time', y='ThermoCouple4', ax=ax, label='Heater Internal')
+    #df.plot(kind='line', x='Date-Time', y='Y6', ax=ax, label='Heater Power State')
 
 def plotTempLogger():
     df = pd.read_csv(tempLoggerfile, parse_dates=["DateTime"])
-    df['Ch1_Value'] = df.rolling(window=Logger_Moving_Ave)['Ch1_Value'].mean()
-    df['Ch2_Value'] = df.rolling(window=Logger_Moving_Ave)['Ch2_Value'].mean()
-    df['Ch3_Value'] = df.rolling(window=Logger_Moving_Ave)['Ch3_Value'].mean()
-    after_start_date = df["DateTime"] >= start_date
-    before_end_date = df["DateTime"] <= end_date
-    between_two_dates = after_start_date & before_end_date
-    filtered_dates = df.loc[between_two_dates]
 
-    #filtered_dates.plot(kind='line', x='DateTime', y='Ch1_Value', ax=ax, title='PBR99 High Delta Test', label='Floor Temp')
-    filtered_dates.plot(kind='line', x='DateTime', y='Ch2_Value', ax=ax, label='Front of PBR', title='PBR99 High Delta Test')
-    filtered_dates.plot(kind='line', x='DateTime', y='Ch3_Value', ax=ax, label='Rear of PBR')
+    # df = filterDates(df)
+    # df = normalize(df)
+    #df = movingAve(df)
+    df = preprocessLogger(df)
+
+    df['diff'] = df['Ch1_Value'] - df['Ch3_Value']
+
+    df.plot(kind='line', x='DateTime', y='Ch1_Value', ax=ax, title='PBR100L Vented Computer Box Temperature Test', label='Center of box')
+    df.plot(kind='line', x='DateTime', y='Ch2_Value', ax=ax, label='Top of box')
+    df.plot(kind='line', x='DateTime', y='Ch3_Value', ax=ax, label='Ambient room temp')
+    df.plot(kind='line', x='DateTime', y='diff', ax=ax, label='Temp Diff')
 
 def plotCleanLog():
     df = pd.read_csv(PBRlogFilename, skiprows=2, comment='E', parse_dates=["Date"])
@@ -251,8 +254,41 @@ def menu():
             ax = fig.add_subplot(111)
 
             #plotCleanLog()
-            #plotSensorBoxLogger()
-            plotRAWPBR()
+            plotSensorBoxLogger()
+            #plotTempLogger()
+            #plotRAWPBR()
+            #plotEvents()
+
+            plt.tight_layout()
+            plt.grid(True)
+            #plt.figure(facecolor='grey')
+            ax.set_facecolor('#353535')
+            ax.spines['bottom'].set_color('white')
+            ax.spines['top'].set_color('white')
+            ax.spines['right'].set_color('white')
+            ax.spines['left'].set_color('white')
+            #plt.set_facecolor('grey')
+            plt.show()
+            return
+        elif opt == '-s':
+            plt.close('all')
+            COLOR = 'white'
+            mpl.rcParams['text.color'] = COLOR
+            mpl.rcParams['axes.labelcolor'] = COLOR
+            mpl.rcParams['xtick.color'] = COLOR
+            mpl.rcParams['ytick.color'] = COLOR
+
+            fig = plt.figure()
+            fig.patch.set_facecolor('#353535')
+            #fig.patch.set_alpha(0.7)
+
+            #global ax
+            #ax = plt.gca()
+            ax = fig.add_subplot(111)
+
+            #plotCleanLog()
+            plotSensorBoxLogger()
+            #plotRAWPBR()
             #plotEvents()
 
             plt.grid(True)
